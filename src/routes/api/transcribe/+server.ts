@@ -36,6 +36,19 @@ const pythonBin = process.env.PYTHON_BIN || 'python3';
 const scriptPath = resolve('scripts/transcribe.py');
 const tempDirectory = join(tmpdir(), 'sveltekit-audio-transcription');
 
+async function checkTranscribeAvailable(): Promise<{ ok: true } | { ok: false; message: string }> {
+	try {
+		await execFileAsync(pythonBin, [scriptPath, '--check'], {
+			timeout: 5000,
+			maxBuffer: 1024 * 1024
+		});
+		return { ok: true };
+	} catch (err: unknown) {
+		const msg = getErrorMessage(err);
+		return { ok: false, message: msg };
+	}
+}
+
 function sanitizeFilename(input: string): string {
 	return input.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
@@ -61,6 +74,15 @@ function getErrorMessage(error: unknown): string {
 	}
 
 	return 'Transcription failed unexpectedly.';
+}
+
+function isEnvironmentError(message: string): boolean {
+	return (
+		message.includes('pip install') ||
+		message.includes('Python 3.13') ||
+		message.includes('onnxruntime') ||
+		message.includes('faster-whisper is unavailable')
+	);
 }
 
 function normalizeWords(rawWords: ScriptWord[] | undefined): TranscriptWord[] {
@@ -110,6 +132,14 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ message: 'The uploaded audio file is empty.' }, { status: 400 });
 		}
 
+		const check = await checkTranscribeAvailable();
+		if (!check.ok) {
+			return json(
+				{ message: check.message },
+				{ status: 503 }
+			);
+		}
+
 		const requestId = randomUUID();
 		const safeName = sanitizeFilename(file.name || 'audio.webm');
 		const extension = extname(safeName) || '.webm';
@@ -154,14 +184,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json(payload);
 	} catch (error) {
 		const message = getErrorMessage(error);
-		return json(
-			{
-				message:
-					`${message}\n\n` +
-					'Make sure Python dependencies are installed (`pip install -r requirements.txt`).'
-			},
-			{ status: 500 }
-		);
+		const fullMessage = isEnvironmentError(message)
+			? message
+			: `${message}\n\nMake sure Python dependencies are installed (\`pip install -r requirements.txt\`).`;
+		return json({ message: fullMessage }, { status: 500 });
 	} finally {
 		if (inputPath) {
 			await cleanupTempFile(inputPath);

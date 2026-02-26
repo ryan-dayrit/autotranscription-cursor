@@ -118,18 +118,32 @@ def transcribe_audio(input_path: str, model_size: str) -> dict[str, Any]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Transcribe audio with faster-whisper.")
-    parser.add_argument("--input", required=True, help="Input audio file path")
-    parser.add_argument("--output", required=True, help="Output JSON path")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Only check if faster-whisper is available; exit 0 if yes, 1 with message if no.",
+    )
+    parser.add_argument("--input", help="Input audio file path")
+    parser.add_argument("--output", help="Output JSON path")
     parser.add_argument(
         "--model-size",
         default=os.environ.get("WHISPER_MODEL_SIZE", "base"),
         help="Whisper model size (tiny, base, small, medium, large-v3, etc.)",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.check and (not args.input or not args.output):
+        parser.error("--input and --output are required unless --check is used.")
+    return args
 
 
 def main() -> int:
     args = parse_args()
+
+    if args.check:
+        if WhisperModel is None or is_unsupported_macos_intel_python():
+            print(missing_faster_whisper_message(), file=sys.stderr)
+            return 1
+        return 0
 
     if not os.path.exists(args.input):
         print(f"Input audio not found: {args.input}", file=sys.stderr)

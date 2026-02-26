@@ -56,13 +56,25 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Python compatibility note (macOS Intel)
+### Python version (important on macOS Intel)
 
-`faster-whisper` depends on `onnxruntime`. PyPI currently does **not** publish `onnxruntime`
-wheels for **macOS x86_64 + Python 3.14+**, so installation/transcription will fail on that
-combination.
+`faster-whisper` depends on `onnxruntime`. PyPI does **not** publish `onnxruntime` wheels for
+**macOS Intel (x86_64) + Python 3.14+**, so transcription will not work on that combination.
 
-If you are on an Intel Mac, use Python **3.13 or lower** for this project.
+**If you are on an Intel Mac**, use Python **3.13 or lower**:
+
+```bash
+# With pyenv (recommended)
+pyenv install 3.13
+pyenv local 3.13
+
+# Then create venv and install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+The project includes a `.python-version` file set to `3.13` so pyenv users get the correct version automatically.
 
 ## Run locally
 
