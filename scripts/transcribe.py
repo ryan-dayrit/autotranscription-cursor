@@ -6,10 +6,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import sys
 from typing import Any
 
-from faster_whisper import WhisperModel
+try:
+    from faster_whisper import WhisperModel
+except ImportError as import_error:
+    WhisperModel = None  # type: ignore[assignment]
+    FASTER_WHISPER_IMPORT_ERROR: ImportError | None = import_error
+else:
+    FASTER_WHISPER_IMPORT_ERROR = None
 
 
 def safe_float(value: Any, fallback: float) -> float:
@@ -24,7 +31,30 @@ def safe_float(value: Any, fallback: float) -> float:
     return number
 
 
+def is_unsupported_macos_intel_python() -> bool:
+    return (
+        sys.platform == "darwin"
+        and platform.machine() == "x86_64"
+        and sys.version_info >= (3, 14)
+    )
+
+
+def missing_faster_whisper_message() -> str:
+    if is_unsupported_macos_intel_python():
+        return (
+            "faster-whisper is unavailable on macOS Intel (x86_64) with Python 3.14+ "
+            "because onnxruntime wheels are not published for that combination. "
+            "Use Python 3.13 (or lower) on Intel Macs, then run `pip install -r requirements.txt`."
+        )
+
+    details = f" Import error: {FASTER_WHISPER_IMPORT_ERROR!s}" if FASTER_WHISPER_IMPORT_ERROR else ""
+    return "faster-whisper is not installed. Run `pip install -r requirements.txt`." + details
+
+
 def build_model(model_size: str) -> WhisperModel:
+    if WhisperModel is None:
+        raise RuntimeError(missing_faster_whisper_message())
+
     return WhisperModel(model_size, device="cpu", compute_type="int8")
 
 

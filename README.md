@@ -56,6 +56,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Python compatibility note (macOS Intel)
+
+`faster-whisper` depends on `onnxruntime`. PyPI currently does **not** publish `onnxruntime`
+wheels for **macOS x86_64 + Python 3.14+**, so installation/transcription will fail on that
+combination.
+
+If you are on an Intel Mac, use Python **3.13 or lower** for this project.
+
 ## Run locally
 
 ```bash
