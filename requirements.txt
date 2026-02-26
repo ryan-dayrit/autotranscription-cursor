@@ -1,2 +1,3 @@
 av>=16.1.0
-faster-whisper>=1.2.1
+# onnxruntime (a faster-whisper dependency) currently has no macOS x86_64 wheels for Python 3.14+.
+faster-whisper>=1.2.1; python_version < "3.14" or platform_system != "Darwin" or platform_machine != "x86_64"
