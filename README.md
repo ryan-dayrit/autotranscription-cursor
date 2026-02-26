@@ -33,6 +33,23 @@ npm install
 
 ### 2) Install Python dependencies
 
+If you see `pkg-config is required for building PyAV`, install system dependencies first:
+
+**macOS (Homebrew)**
+
+```bash
+brew install pkg-config ffmpeg
+```
+
+**Ubuntu / Debian**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y pkg-config ffmpeg libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
+```
+
+Then create a virtual environment and install Python packages:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
